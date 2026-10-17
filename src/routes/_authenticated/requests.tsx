@@ -99,7 +99,7 @@ function RequestsPage() {
 function NewRequest({ faculty, me }: { faculty: { id: string; full_name: string }[]; me: NonNullable<ReturnType<typeof useMe>["data"]> }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", details: "", request_type: REQUEST_TYPES[0], program: me.profile?.program ?? "UG", faculty_id: "" });
+  const [form, setForm] = useState({ title: "", details: "", request_type: REQUEST_TYPES[0] as string, program: me.profile?.program ?? "UG", faculty_id: "" });
   const m = useMutation({
     mutationFn: async () => {
       if (!form.faculty_id) throw new Error("Choose a faculty member");

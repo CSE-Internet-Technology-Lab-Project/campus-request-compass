@@ -21,7 +21,7 @@ function PeoplePage() {
   if (!me?.isHod) return <p className="text-muted-foreground">Only the HOD can manage roles.</p>;
 
   async function toggle(userId: string, role: Role, on: boolean) {
-    if (userId === me!.id && role === "hod" && !on) return toast.error("You can't remove your own HOD role.");
+    if (userId === me!.id && role === "hod" && !on) { toast.error("You cannot remove your own HOD role."); return; }
     const { error } = on
       ? await supabase.from("user_roles").insert({ user_id: userId, role })
       : await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role);
