@@ -14,16 +14,270 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          program: Database["public"]["Enums"]["program_level"] | null
+          roll_no: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id: string
+          program?: Database["public"]["Enums"]["program_level"] | null
+          roll_no?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          program?: Database["public"]["Enums"]["program_level"] | null
+          roll_no?: string | null
+        }
+        Relationships: []
+      }
+      project_applications: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string
+          statement: string
+          status: Database["public"]["Enums"]["application_status"]
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id: string
+          statement?: string
+          status?: Database["public"]["Enums"]["application_status"]
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string
+          statement?: string
+          status?: Database["public"]["Enums"]["application_status"]
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_applications_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_applications_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          created_at: string
+          description: string
+          faculty_id: string
+          id: string
+          is_open: boolean
+          max_students: number
+          program: Database["public"]["Enums"]["program_level"]
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          faculty_id: string
+          id?: string
+          is_open?: boolean
+          max_students?: number
+          program: Database["public"]["Enums"]["program_level"]
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          faculty_id?: string
+          id?: string
+          is_open?: boolean
+          max_students?: number
+          program?: Database["public"]["Enums"]["program_level"]
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_faculty_id_fkey"
+            columns: ["faculty_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      request_history: {
+        Row: {
+          action: string
+          actor_id: string
+          created_at: string
+          id: string
+          remarks: string | null
+          request_id: string
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          created_at?: string
+          id?: string
+          remarks?: string | null
+          request_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          created_at?: string
+          id?: string
+          remarks?: string | null
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_history_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_history_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      requests: {
+        Row: {
+          created_at: string
+          details: string
+          faculty_id: string
+          faculty_remarks: string | null
+          hod_remarks: string | null
+          id: string
+          program: Database["public"]["Enums"]["program_level"]
+          request_type: string
+          status: Database["public"]["Enums"]["request_status"]
+          student_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string
+          faculty_id: string
+          faculty_remarks?: string | null
+          hod_remarks?: string | null
+          id?: string
+          program: Database["public"]["Enums"]["program_level"]
+          request_type: string
+          status?: Database["public"]["Enums"]["request_status"]
+          student_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          details?: string
+          faculty_id?: string
+          faculty_remarks?: string | null
+          hod_remarks?: string | null
+          id?: string
+          program?: Database["public"]["Enums"]["program_level"]
+          request_type?: string
+          status?: Database["public"]["Enums"]["request_status"]
+          student_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "requests_faculty_id_fkey"
+            columns: ["faculty_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requests_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      act_on_application: {
+        Args: { _approve: boolean; _id: string }
+        Returns: undefined
+      }
+      act_on_request: {
+        Args: { _approve: boolean; _id: string; _remarks: string }
+        Returns: undefined
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "student" | "faculty" | "hod"
+      application_status:
+        | "applied"
+        | "faculty_accepted"
+        | "allocated"
+        | "rejected"
+      program_level: "UG" | "PG"
+      request_status:
+        | "pending_faculty"
+        | "pending_hod"
+        | "approved"
+        | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +404,21 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["student", "faculty", "hod"],
+      application_status: [
+        "applied",
+        "faculty_accepted",
+        "allocated",
+        "rejected",
+      ],
+      program_level: ["UG", "PG"],
+      request_status: [
+        "pending_faculty",
+        "pending_hod",
+        "approved",
+        "rejected",
+      ],
+    },
   },
 } as const
