@@ -2,10 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { GraduationCap, ClipboardCheck, FolderKanban, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useMe } from "@/lib/auth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
-    meta: [
+    meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, 
       { title: "DeptDesk — UG/PG Departmental Workflow Portal" },
       { name: "description", content: "Submit requests, route approvals through faculty and HOD, and allocate student projects." },
       { property: "og:title", content: "DeptDesk — Departmental Workflow Portal" },
@@ -23,22 +24,23 @@ const features = [
 ];
 
 function Index() {
+  const { data: me } = useMe();
   return (
     <div className="min-h-screen bg-background">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <span className="font-display text-2xl font-bold text-primary">DeptDesk</span>
-        <Button asChild><Link to="/auth">Sign in</Link></Button>
+        <Button asChild>{me ? <Link to="/dashboard">Open workspace</Link> : <Link to="/auth">Sign in</Link>}</Button>
       </header>
       <section className="mx-auto max-w-6xl px-6 pb-16 pt-12">
         <p className="text-sm font-semibold uppercase tracking-widest text-accent-foreground">Department workflow portal</p>
         <h1 className="mt-4 max-w-3xl font-display text-5xl font-bold leading-tight text-foreground md:text-6xl">
-          Every request, approval and project — in one place.
+          DeptDesk
         </h1>
         <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
           DeptDesk replaces paper forms and email chains with a clear, trackable workflow for UG and PG activities.
         </p>
         <div className="mt-8 flex gap-3">
-          <Button size="lg" asChild><Link to="/auth">Get started</Link></Button>
+          <Button size="lg" asChild>{me ? <Link to="/dashboard">Open workspace</Link> : <Link to="/auth">Get started</Link>}</Button>
         </div>
       </section>
       <section className="mx-auto grid max-w-6xl gap-4 px-6 pb-20 md:grid-cols-2 lg:grid-cols-4">

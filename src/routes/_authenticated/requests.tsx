@@ -15,10 +15,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { canReviewRequest } from "@/lib/workflow";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 
 export const Route = createFileRoute("/_authenticated/requests")({
-  head: () => ({ meta: [{ title: "Requests & approvals — DeptDesk" }, { name: "description", content: "Submit and approve departmental requests." }, { property: "og:title", content: "Requests & approvals — DeptDesk" }, { property: "og:description", content: "Workflow-based approvals for UG/PG activities." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Requests & approvals — DeptDesk" }, { name: "description", content: "Submit and approve departmental requests." }, { property: "og:title", content: "Requests & approvals — DeptDesk" }, { property: "og:description", content: "Workflow-based approvals for UG/PG activities." }] }),
   component: RequestsPage,
 });
 
@@ -30,9 +33,9 @@ type Req = {
 function RequestsPage() {
   const { data: me } = useMe();
   const { data: people = [] } = usePeople();
-  const [filter, setFilter] = useState("action");
+  const [filter, setFilter] = useState("mine");
   const [open, setOpen] = useState<Req | null>(null);
-  const { data: reqs = [] } = useQuery({
+  const { data: reqs = [], isPending, error, refetch } = useQuery({
     queryKey: ["requests"],
     queryFn: async () => {
       const { data, error } = await supabase.from("requests").select("*").order("created_at", { ascending: false });
@@ -40,9 +43,10 @@ function RequestsPage() {
       return data as Req[];
     },
   });
-  if (!me) return null;
+  if (isPending || !me) return <Skeleton className="h-64 w-full" />;
+  if (error) return <Alert variant="destructive"><AlertDescription>Requests could not load. <Button variant="outline" onClick={() => refetch()}>Try again</Button></AlertDescription></Alert>;
   const name = (id: string) => people.find((p) => p.id === id)?.full_name ?? "—";
-  const needsMe = (r: Req) => (r.status === "pending_faculty" && r.faculty_id === me.id) || (r.status === "pending_hod" && me.isHod);
+  const needsMe = (r: Req) => canReviewRequest(r, me);
   const shown = reqs.filter((r) =>
     filter === "action" ? needsMe(r) : filter === "mine" ? r.student_id === me.id : true,
   );
@@ -91,7 +95,7 @@ function RequestsPage() {
           </Table>
         </CardContent>
       </Card>
-      <RequestSheet req={open} onClose={() => setOpen(null)} canAct={open ? needsMe(open) : false} name={name} />
+      <RequestSheet req={open} onClose={() => setOpen(null)} key={open?.id ?? "closed"} canAct={open ? needsMe(open) : false} name={name} />
     </div>
   );
 }
@@ -102,11 +106,12 @@ function NewRequest({ faculty, me }: { faculty: { id: string; full_name: string 
   const [form, setForm] = useState({ title: "", details: "", request_type: REQUEST_TYPES[0] as string, program: me.profile?.program ?? "UG", faculty_id: "" });
   const m = useMutation({
     mutationFn: async () => {
+      if (!form.title.trim()) throw new Error("Enter a request title");
       if (!form.faculty_id) throw new Error("Choose a faculty member");
-      const { error } = await supabase.from("requests").insert({ ...form, program: form.program as "UG" | "PG", student_id: me.id });
+      const { error } = await supabase.from("requests").insert({ ...form, title: form.title.trim(), program: form.program as "UG" | "PG", student_id: me.id });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Request submitted"); setOpen(false); qc.invalidateQueries(); },
+    onSuccess: () => { toast.success("Request submitted"); setOpen(false); setForm({ ...form, title: "", details: "", faculty_id: "" }); qc.invalidateQueries(); },
     onError: (e: Error) => toast.error(e.message),
   });
   return (
@@ -115,7 +120,7 @@ function NewRequest({ faculty, me }: { faculty: { id: string; full_name: string 
       <DialogContent>
         <DialogHeader><DialogTitle>New request</DialogTitle><DialogDescription>It goes to the chosen faculty first, then to the HOD.</DialogDescription></DialogHeader>
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1"><Label>Type</Label>
               <Select value={form.request_type} onValueChange={(v) => setForm({ ...form, request_type: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -123,7 +128,7 @@ function NewRequest({ faculty, me }: { faculty: { id: string; full_name: string 
               </Select>
             </div>
             <div className="space-y-1"><Label>Program</Label>
-              <Select value={form.program} onValueChange={(v) => setForm({ ...form, program: v as "UG" | "PG" })}>
+              <Select value={form.program} onValueChange={(v) => setForm({ ...form, title: form.title.trim(), program: v as "UG" | "PG" })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent><SelectItem value="UG">UG</SelectItem><SelectItem value="PG">PG</SelectItem></SelectContent>
               </Select>
@@ -138,7 +143,7 @@ function NewRequest({ faculty, me }: { faculty: { id: string; full_name: string 
           <div className="space-y-1"><Label>Title</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
           <div className="space-y-1"><Label>Details</Label><Textarea rows={4} value={form.details} onChange={(e) => setForm({ ...form, details: e.target.value })} /></div>
         </div>
-        <DialogFooter><Button disabled={!form.title || m.isPending} onClick={() => m.mutate()}>Submit</Button></DialogFooter>
+        <DialogFooter><Button disabled={!form.title.trim() || !form.faculty_id || m.isPending} onClick={() => m.mutate()}>Submit</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -150,11 +155,17 @@ function RequestSheet({ req, onClose, canAct, name }: { req: Req | null; onClose
   const { data: history = [] } = useQuery({
     queryKey: ["history", req?.id],
     enabled: !!req,
-    queryFn: async () => (await supabase.from("request_history").select("*").eq("request_id", req!.id).order("created_at")).data ?? [],
+    queryFn: async () => {
+      if (!req) return [];
+      const { data, error } = await supabase.from("request_history").select("*").eq("request_id", req.id).order("created_at");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
   const act = useMutation({
     mutationFn: async (approve: boolean) => {
-      const { error } = await supabase.rpc("act_on_request", { _id: req!.id, _approve: approve, _remarks: remarks });
+      if (!req) throw new Error("Choose a request");
+      const { error } = await supabase.rpc("act_on_request", { _id: req.id, _approve: approve, _remarks: remarks });
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Decision recorded"); setRemarks(""); onClose(); qc.invalidateQueries(); },

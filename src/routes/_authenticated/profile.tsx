@@ -11,13 +11,14 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/profile")({
-  head: () => ({ meta: [{ title: "My profile — DeptDesk" }, { name: "description", content: "Update your profile." }, { property: "og:title", content: "My profile — DeptDesk" }, { property: "og:description", content: "Update your profile." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "My profile — DeptDesk" }, { name: "description", content: "Update your profile." }, { property: "og:title", content: "My profile — DeptDesk" }, { property: "og:description", content: "Update your profile." }] }),
   component: ProfilePage,
 });
 
 function ProfilePage() {
   const { data: me } = useMe();
   const qc = useQueryClient();
+  const [saving, setSaving] = useState(false);
   const [f, setF] = useState({ full_name: "", roll_no: "", program: "" });
   useEffect(() => {
     if (me?.profile) setF({ full_name: me.profile.full_name, roll_no: me.profile.roll_no ?? "", program: me.profile.program ?? "" });
@@ -25,9 +26,12 @@ function ProfilePage() {
   if (!me) return null;
 
   async function save() {
+    if (!me || !f.full_name.trim()) return;
+    setSaving(true);
     const { error } = await supabase.from("profiles").update({
-      full_name: f.full_name, roll_no: f.roll_no || null, program: (f.program || null) as "UG" | "PG" | null,
-    }).eq("id", me!.id);
+      full_name: f.full_name.trim(), roll_no: f.roll_no || null, program: (f.program || null) as "UG" | "PG" | null,
+    }).eq("id", me.id);
+    setSaving(false);
     if (error) toast.error(error.message);
     else { toast.success("Profile saved"); qc.invalidateQueries(); }
   }
@@ -44,7 +48,7 @@ function ProfilePage() {
           </Select>
         </div>
         <div className="space-y-1"><Label>Roll / employee no.</Label><Input value={f.roll_no} onChange={(e) => setF({ ...f, roll_no: e.target.value })} /></div>
-        <Button onClick={save}>Save</Button>
+        <Button disabled={saving || !f.full_name.trim()} onClick={save}>{saving ? "Saving…" : "Save"}</Button>
       </CardContent>
     </Card>
   );
