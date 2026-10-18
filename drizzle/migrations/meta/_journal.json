@@ -15,6 +15,13 @@
       "when": 1792317594515,
       "tag": "0001_complete_workflow_safeguards",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792317759860,
+      "tag": "0002_restrict_workflow_table_grants",
+      "breakpoints": true
     }
   ]
 }
