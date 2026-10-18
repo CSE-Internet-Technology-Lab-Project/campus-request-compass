@@ -7,12 +7,15 @@ export function useMe() {
   return useQuery({
     queryKey: ["me"],
     queryFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
+      const { data: u, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
       if (!u.user) return null;
-      const [{ data: profile }, { data: roles }] = await Promise.all([
+      const [{ data: profile, error: profileError }, { data: roles, error: rolesError }] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", u.user.id).maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", u.user.id),
       ]);
+      if (profileError) throw profileError;
+      if (rolesError) throw rolesError;
       const r = (roles ?? []).map((x) => x.role as Role);
       return {
         id: u.user.id,
@@ -31,10 +34,12 @@ export function usePeople() {
   return useQuery({
     queryKey: ["people"],
     queryFn: async () => {
-      const [{ data: profiles }, { data: roles }] = await Promise.all([
+      const [{ data: profiles, error: profileError }, { data: roles, error: rolesError }] = await Promise.all([
         supabase.from("profiles").select("*").order("full_name"),
         supabase.from("user_roles").select("user_id, role"),
       ]);
+      if (profileError) throw profileError;
+      if (rolesError) throw rolesError;
       return (profiles ?? []).map((p) => ({
         ...p,
         roles: (roles ?? []).filter((r) => r.user_id === p.id).map((r) => r.role as Role),

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export const Route = createFileRoute("/")({
   head: () => ({
-    meta: [
+    meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, 
       { title: "DeptDesk — UG/PG Departmental Workflow Portal" },
       { name: "description", content: "Submit requests, route approvals through faculty and HOD, and allocate student projects." },
       { property: "og:title", content: "DeptDesk — Departmental Workflow Portal" },

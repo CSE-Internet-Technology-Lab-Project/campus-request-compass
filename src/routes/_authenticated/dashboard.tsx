@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { canReviewRequest } from "@/lib/workflow";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe, statusLabel, statusVariant } from "@/lib/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,27 +10,32 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — DeptDesk" }, { name: "description", content: "Your department workflow overview." }, { property: "og:title", content: "Dashboard — DeptDesk" }, { property: "og:description", content: "Your department workflow overview." }] }),
+  head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Dashboard — DeptDesk" }, { name: "description", content: "Your department workflow overview." }, { property: "og:title", content: "Dashboard — DeptDesk" }, { property: "og:description", content: "Your department workflow overview." }] }),
   component: Dashboard,
 });
 
 function Dashboard() {
   const { data: me } = useMe();
-  const { data } = useQuery({
+  const { data, isPending, error, refetch } = useQuery({
     queryKey: ["dashboard"],
     queryFn: async () => {
-      const [{ data: reqs }, { data: apps }, { data: projects }] = await Promise.all([
+      const [{ data: reqs, error: reqError }, { data: apps, error: appError }, { data: projects, error: projectError }] = await Promise.all([
         supabase.from("requests").select("id,title,status,student_id,faculty_id,created_at").order("created_at", { ascending: false }),
         supabase.from("project_applications").select("id,status,student_id,project_id"),
         supabase.from("projects").select("id,is_open,faculty_id"),
       ]);
+      if (reqError) throw reqError;
+      if (appError) throw appError;
+      if (projectError) throw projectError;
       return { reqs: reqs ?? [], apps: apps ?? [], projects: projects ?? [] };
     },
   });
-  if (!me || !data) return null;
+  if (isPending || !me) return <Skeleton className="h-64 w-full" />;
+  if (error) return <Alert variant="destructive"><AlertTitle>Overview unavailable</AlertTitle><AlertDescription><Button variant="outline" onClick={() => refetch()}>Try again</Button></AlertDescription></Alert>;
+  if (!data) return null;
 
   const awaitingMe = data.reqs.filter(
-    (r) => (r.status === "pending_faculty" && r.faculty_id === me.id) || (r.status === "pending_hod" && me.isHod),
+    (r) => canReviewRequest(r, me),
   );
   const mine = data.reqs.filter((r) => r.student_id === me.id);
   const stats = [
@@ -67,7 +74,7 @@ function Dashboard() {
         </CardHeader>
         <CardContent className="space-y-2">
           {data.reqs.slice(0, 6).map((r) => (
-            <div key={r.id} className="flex items-center justify-between rounded-md border p-3">
+            <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 border-b py-3">
               <span className="font-medium">{r.title}</span>
               <Badge variant={statusVariant(r.status)}>{statusLabel[r.status]}</Badge>
             </div>

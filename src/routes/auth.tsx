@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
-    meta: [
+    meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, 
       { title: "Sign in — DeptDesk" },
       { name: "description", content: "Sign in or create your DeptDesk account." },
       { property: "og:title", content: "Sign in — DeptDesk" },
