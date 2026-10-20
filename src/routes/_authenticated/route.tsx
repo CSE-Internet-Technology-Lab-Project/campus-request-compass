@@ -21,15 +21,16 @@ export const Route = createFileRoute("/_authenticated")({
 
 function Layout() {
   const { data: me } = useMe();
+  const { reqQueue, appQueue } = useWorkQueue();
   const qc = useQueryClient();
   const navigate = useNavigate();
 
   const items = [
-    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/requests", label: "Requests & approvals", icon: ClipboardList },
-    { to: "/projects", label: "Projects", icon: FolderKanban },
-    { to: "/profile", label: "My profile", icon: UserCircle },
-    ...(me?.isHod ? [{ to: "/people", label: "People & roles", icon: Users }] : []),
+    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, count: 0 },
+    { to: "/requests", label: "Requests & approvals", icon: ClipboardList, count: reqQueue.length },
+    { to: "/projects", label: "Projects", icon: FolderKanban, count: appQueue.length },
+    { to: "/profile", label: "My profile", icon: UserCircle, count: 0 },
+    ...(me?.isHod ? [{ to: "/people", label: "People & roles", icon: Users, count: 0 }] : []),
   ] as const;
 
   async function signOut() {
@@ -57,6 +58,7 @@ function Layout() {
                         <i.icon /> <span>{i.label}</span>
                       </Link>
                     </SidebarMenuButton>
+                    {i.count > 0 && <SidebarMenuBadge aria-label={`${i.count} waiting for you`}>{i.count}</SidebarMenuBadge>}
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
