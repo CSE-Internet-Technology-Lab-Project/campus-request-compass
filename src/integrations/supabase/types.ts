@@ -174,6 +174,7 @@ export type Database = {
           faculty_remarks: string | null
           hod_remarks: string | null
           id: string
+          needed_by: string | null
           program: Database["public"]["Enums"]["program_level"]
           request_type: string
           status: Database["public"]["Enums"]["request_status"]
@@ -188,6 +189,7 @@ export type Database = {
           faculty_remarks?: string | null
           hod_remarks?: string | null
           id?: string
+          needed_by?: string | null
           program: Database["public"]["Enums"]["program_level"]
           request_type: string
           status?: Database["public"]["Enums"]["request_status"]
@@ -202,6 +204,7 @@ export type Database = {
           faculty_remarks?: string | null
           hod_remarks?: string | null
           id?: string
+          needed_by?: string | null
           program?: Database["public"]["Enums"]["program_level"]
           request_type?: string
           status?: Database["public"]["Enums"]["request_status"]
@@ -264,6 +267,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      withdraw_request: { Args: { _id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "student" | "faculty" | "hod"
@@ -278,6 +282,7 @@ export type Database = {
         | "pending_hod"
         | "approved"
         | "rejected"
+        | "withdrawn"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -418,6 +423,7 @@ export const Constants = {
         "pending_hod",
         "approved",
         "rejected",
+        "withdrawn",
       ],
     },
   },

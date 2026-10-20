@@ -63,9 +63,19 @@ export const statusLabel: Record<string, string> = {
   pending_hod: "Awaiting HOD",
   approved: "Approved",
   rejected: "Rejected",
-  applied: "Applied",
-  faculty_accepted: "Guide accepted",
+  withdrawn: "Withdrawn",
+  applied: "Awaiting guide",
+  faculty_accepted: "Awaiting HOD",
   allocated: "Allocated",
+};
+
+export const actionLabel: Record<string, string> = {
+  submitted: "Submitted the request",
+  faculty_approved: "Faculty approved and forwarded to HOD",
+  faculty_rejected: "Faculty rejected",
+  hod_approved: "HOD gave final approval",
+  hod_rejected: "HOD rejected",
+  withdrawn: "Student withdrew the request",
 };
 
 export function statusVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
@@ -73,4 +83,20 @@ export function statusVariant(s: string): "default" | "secondary" | "destructive
   if (s === "rejected") return "destructive";
   if (s === "pending_hod" || s === "faculty_accepted") return "secondary";
   return "outline";
+}
+
+export function timeAgo(iso: string) {
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return "just now";
+  const units: [number, string][] = [[60, "minute"], [3600, "hour"], [86400, "day"], [604800, "week"], [2592000, "month"]];
+  let label = "";
+  for (let i = units.length - 1; i >= 0; i--) {
+    const [secs, name] = units[i];
+    if (diff >= secs) { const n = Math.floor(diff / secs); label = `${n} ${name}${n > 1 ? "s" : ""} ago`; break; }
+  }
+  return label;
+}
+
+export function initials(name?: string | null) {
+  return (name ?? "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "?";
 }
