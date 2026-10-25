@@ -29,6 +29,13 @@
       "when": 1792498874021,
       "tag": "0003_request_withdrawal_and_reasons",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792952013438,
+      "tag": "0004_revision_milestones_and_verification",
+      "breakpoints": true
     }
   ]
 }
