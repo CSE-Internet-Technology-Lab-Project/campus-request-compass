@@ -24,12 +24,13 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 
-type Search = { tab: "browse" | "mine" | "review" | undefined };
+type Search = { tab?: "browse" | "mine" | "review" };
 
 export const Route = createFileRoute("/_authenticated/projects")({
-  validateSearch: (s: Record<string, unknown>) => ({
-    tab: s["tab"] === "browse" || s["tab"] === "mine" || s["tab"] === "review" ? s["tab"] : undefined,
-  }),
+  validateSearch: (s: Record<string, unknown>) => {
+    const tab = s["tab"];
+    return { ...(tab === "browse" || tab === "mine" || tab === "review" ? { tab } : {}) };
+  },
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Project allocation — DeptDesk" }, { name: "description", content: "Publish, apply for and allocate student projects." }, { property: "og:title", content: "Project allocation — DeptDesk" }, { property: "og:description", content: "Project allocation management for UG/PG." }] }),
   component: ProjectsPage,
 });
@@ -125,7 +126,7 @@ function ProjectsPage() {
         </Alert>
       )}
 
-      <Tabs value={tab} onValueChange={(v) => navigate({ search: { tab: v as Search["tab"] }, replace: true })}>
+      <Tabs value={tab} onValueChange={(v) => navigate({ search: v === "browse" || v === "mine" || v === "review" ? { tab: v } : {}, replace: true })}>
         <TabsList>
           <TabsTrigger value="browse">Projects</TabsTrigger>
           {me.isStudent && <TabsTrigger value="mine">My applications ({myApps.length})</TabsTrigger>}
