@@ -61,6 +61,7 @@ export const REQUEST_TYPES = [
 export const statusLabel: Record<string, string> = {
   pending_faculty: "Awaiting faculty",
   pending_hod: "Awaiting HOD",
+  needs_revision: "Changes requested",
   approved: "Approved",
   rejected: "Rejected",
   withdrawn: "Withdrawn",
@@ -73,6 +74,8 @@ export const actionLabel: Record<string, string> = {
   submitted: "Submitted the request",
   faculty_approved: "Faculty approved and forwarded to HOD",
   faculty_rejected: "Faculty rejected",
+  faculty_requested_changes: "Faculty sent the request back for changes",
+  student_revised: "Student revised and resubmitted",
   hod_approved: "HOD gave final approval",
   hod_rejected: "HOD rejected",
   withdrawn: "Student withdrew the request",

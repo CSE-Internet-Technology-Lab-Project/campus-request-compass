@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canReviewRequest, canReviewApplication, validProjectCapacity, canWithdrawRequest, canSubmitDecision, requestSteps } from "./workflow";
+import { canReviewRequest, canReviewApplication, validProjectCapacity, canWithdrawRequest, canSubmitDecision, requestSteps, canRequestChanges, canReviseRequest, canSubmitMilestone, canReviewMilestone } from "./workflow";
 const faculty = { id: "guide", isFaculty: true, isHod: false };
 const hod = { id: "head", isFaculty: false, isHod: true };
 describe("Department workflow permissions", () => {
@@ -37,6 +37,27 @@ describe("Department workflow permissions", () => {
     expect(canSubmitDecision(false, "  ")).toBe(false);
     expect(canSubmitDecision(false, "Missing documents")).toBe(true);
     expect(canSubmitDecision(true, "")).toBe(true);
+  });
+  it("lets assigned faculty send a pending request back for changes", () => {
+    expect(canRequestChanges({ status: "pending_faculty", faculty_id: "guide" }, faculty)).toBe(true);
+    expect(canRequestChanges({ status: "pending_faculty", faculty_id: "guide" }, hod)).toBe(false);
+    expect(canRequestChanges({ status: "pending_hod", faculty_id: "guide" }, faculty)).toBe(false);
+    expect(canRequestChanges({ status: "approved", faculty_id: "guide" }, faculty)).toBe(false);
+  });
+  it("lets only the student revise a request that needs changes", () => {
+    expect(canReviseRequest({ status: "needs_revision", student_id: "s1" }, "s1")).toBe(true);
+    expect(canReviseRequest({ status: "needs_revision", student_id: "s1" }, "s2")).toBe(false);
+    expect(canReviseRequest({ status: "pending_faculty", student_id: "s1" }, "s1")).toBe(false);
+  });
+  it("gates milestone submission to the allocated student and review to supervisor or HOD", () => {
+    const student = { id: "s1", isFaculty: false, isHod: false };
+    expect(canSubmitMilestone({ status: "pending" }, "s1", student)).toBe(true);
+    expect(canSubmitMilestone({ status: "pending" }, "s1", faculty)).toBe(false);
+    expect(canSubmitMilestone({ status: "submitted" }, "s1", student)).toBe(false);
+    expect(canReviewMilestone({ status: "submitted" }, "guide", faculty)).toBe(true);
+    expect(canReviewMilestone({ status: "submitted" }, "guide", hod)).toBe(true);
+    expect(canReviewMilestone({ status: "submitted" }, "other", faculty)).toBe(false);
+    expect(canReviewMilestone({ status: "pending" }, "guide", hod)).toBe(false);
   });
   it("marks the stage where a request was rejected", () => {
     expect(requestSteps("rejected", false)[1]).toBe("failed");

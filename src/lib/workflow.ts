@@ -22,12 +22,33 @@ export function canSubmitDecision(approve: boolean, remarks: string) {
   return approve || remarks.trim().length > 0;
 }
 
+/** Mirrors request_changes: only the assigned faculty, while the request is waiting on them. */
+export function canRequestChanges(request: { status: string; faculty_id: string }, actor: Actor) {
+  return request.status === "pending_faculty" && request.faculty_id === actor.id && actor.isFaculty;
+}
+
+/** Mirrors revise_request: only the student, only a request sent back for changes. */
+export function canReviseRequest(request: { status: string; student_id: string }, actorId: string) {
+  return request.status === "needs_revision" && request.student_id === actorId;
+}
+
+/** Mirrors submit_milestone: the allocated student submits a pending milestone. */
+export function canSubmitMilestone(milestone: { status: string }, studentId: string, actor: Actor) {
+  return milestone.status === "pending" && studentId === actor.id;
+}
+
+/** Mirrors act_on_milestone: the supervisor or the HOD reviews a submitted milestone. */
+export function canReviewMilestone(milestone: { status: string }, guideId: string | undefined, actor: Actor) {
+  return milestone.status === "submitted" && (guideId === actor.id || actor.isHod);
+}
+
 export type StepState = "done" | "current" | "upcoming" | "failed" | "skipped";
 
 /** Request stages: Submitted → Faculty review → HOD approval → Approved. */
 export function requestSteps(status: string, reachedHod: boolean): StepState[] {
   switch (status) {
     case "pending_faculty": return ["done", "current", "upcoming", "upcoming"];
+    case "needs_revision": return ["done", "current", "upcoming", "upcoming"];
     case "pending_hod": return ["done", "done", "current", "upcoming"];
     case "approved": return ["done", "done", "done", "done"];
     case "rejected": return reachedHod ? ["done", "done", "failed", "skipped"] : ["done", "failed", "skipped", "skipped"];
