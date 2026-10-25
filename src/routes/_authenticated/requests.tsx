@@ -27,12 +27,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-type Search = { review?: string; tab?: "action" | "mine" | "all" };
+type Search = { review: string | undefined; tab: "action" | "mine" | "all" | undefined };
 
 export const Route = createFileRoute("/_authenticated/requests")({
-  validateSearch: (s: Record<string, unknown>): Search => ({
-    review: typeof s.review === "string" ? s.review : undefined,
-    tab: s.tab === "action" || s.tab === "mine" || s.tab === "all" ? s.tab : undefined,
+  validateSearch: (s: Record<string, unknown>) => ({
+    review: typeof s["review"] === "string" ? s["review"] : undefined,
+    tab: s["tab"] === "action" || s["tab"] === "mine" || s["tab"] === "all" ? s["tab"] : undefined,
   }),
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Requests & approvals — DeptDesk" }, { name: "description", content: "Submit and approve departmental requests." }, { property: "og:title", content: "Requests & approvals — DeptDesk" }, { property: "og:description", content: "Workflow-based approvals for UG/PG activities." }] }),
   component: RequestsPage,

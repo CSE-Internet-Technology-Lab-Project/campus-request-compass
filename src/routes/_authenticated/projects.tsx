@@ -24,11 +24,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 
-type Search = { tab?: "browse" | "mine" | "review" };
+type Search = { tab: "browse" | "mine" | "review" | undefined };
 
 export const Route = createFileRoute("/_authenticated/projects")({
-  validateSearch: (s: Record<string, unknown>): Search => ({
-    tab: s.tab === "browse" || s.tab === "mine" || s.tab === "review" ? s.tab : undefined,
+  validateSearch: (s: Record<string, unknown>) => ({
+    tab: s["tab"] === "browse" || s["tab"] === "mine" || s["tab"] === "review" ? s["tab"] : undefined,
   }),
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Project allocation — DeptDesk" }, { name: "description", content: "Publish, apply for and allocate student projects." }, { property: "og:title", content: "Project allocation — DeptDesk" }, { property: "og:description", content: "Project allocation management for UG/PG." }] }),
   component: ProjectsPage,
