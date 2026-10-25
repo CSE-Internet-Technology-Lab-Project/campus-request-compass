@@ -30,10 +30,14 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 type Search = { review?: string; tab?: "action" | "mine" | "all" };
 
 export const Route = createFileRoute("/_authenticated/requests")({
-  validateSearch: (s: Record<string, unknown>): Search => ({
-    review: typeof s.review === "string" ? s.review : undefined,
-    tab: s.tab === "action" || s.tab === "mine" || s.tab === "all" ? s.tab : undefined,
-  }),
+  validateSearch: (s: Record<string, unknown>) => {
+    const review = s["review"];
+    const tab = s["tab"];
+    return {
+      ...(typeof review === "string" ? { review } : {}),
+      ...(tab === "action" || tab === "mine" || tab === "all" ? { tab } : {}),
+    };
+  },
   head: () => ({ meta: [{ property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { title: "Requests & approvals — DeptDesk" }, { name: "description", content: "Submit and approve departmental requests." }, { property: "og:title", content: "Requests & approvals — DeptDesk" }, { property: "og:description", content: "Workflow-based approvals for UG/PG activities." }] }),
   component: RequestsPage,
 });
@@ -81,7 +85,7 @@ function RequestsPage() {
     (!q || [r.title, r.request_type, name(r.student_id), name(r.faculty_id)].some((v) => v.toLowerCase().includes(q))),
   );
   const open = reqs.find((r) => r.id === search.review) ?? null;
-  const setOpen = (id?: string) => navigate({ search: (s: Search) => ({ ...s, review: id }), replace: true });
+  const setOpen = (id?: string) => navigate({ search: (s) => ({ ...s, ...(id !== undefined ? { review: id } : {}) }), replace: true });
 
   return (
     <div className="space-y-6">
@@ -94,7 +98,7 @@ function RequestsPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Tabs value={tab} onValueChange={(v) => navigate({ search: (s: Search) => ({ ...s, tab: v as Search["tab"] }), replace: true })}>
+        <Tabs value={tab} onValueChange={(v) => navigate({ search: (s) => ({ ...s, ...(v === "action" || v === "mine" || v === "all" ? { tab: v } : {}) }), replace: true })}>
           <TabsList>
             {(me.isFaculty || me.isHod) && <TabsTrigger value="action" className="gap-2">Needs my action {counts.action > 0 && <Badge className="h-5 px-1.5">{counts.action}</Badge>}</TabsTrigger>}
             {me.isStudent && <TabsTrigger value="mine">My requests ({counts.mine})</TabsTrigger>}

@@ -91,7 +91,7 @@ export function timeAgo(iso: string) {
   const units: [number, string][] = [[60, "minute"], [3600, "hour"], [86400, "day"], [604800, "week"], [2592000, "month"]];
   let label = "";
   for (let i = units.length - 1; i >= 0; i--) {
-    const [secs, name] = units[i];
+    const [secs, name] = units[i]!;
     if (diff >= secs) { const n = Math.floor(diff / secs); label = `${n} ${name}${n > 1 ? "s" : ""} ago`; break; }
   }
   return label;
