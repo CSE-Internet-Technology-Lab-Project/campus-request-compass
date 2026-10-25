@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      milestones: {
+        Row: {
+          application_id: string
+          completed_at: string | null
+          created_at: string
+          description: string
+          due_date: string | null
+          id: string
+          seq: number
+          status: Database["public"]["Enums"]["milestone_status"]
+          student_note: string | null
+          supervisor_remarks: string | null
+          title: string
+        }
+        Insert: {
+          application_id: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string
+          due_date?: string | null
+          id?: string
+          seq: number
+          status?: Database["public"]["Enums"]["milestone_status"]
+          student_note?: string | null
+          supervisor_remarks?: string | null
+          title: string
+        }
+        Update: {
+          application_id?: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string
+          due_date?: string | null
+          id?: string
+          seq?: number
+          status?: Database["public"]["Enums"]["milestone_status"]
+          student_note?: string | null
+          supervisor_remarks?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "milestones_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "project_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -43,6 +93,7 @@ export type Database = {
       }
       project_applications: {
         Row: {
+          cgpa: number | null
           created_at: string
           id: string
           project_id: string
@@ -51,6 +102,7 @@ export type Database = {
           student_id: string
         }
         Insert: {
+          cgpa?: number | null
           created_at?: string
           id?: string
           project_id: string
@@ -59,6 +111,7 @@ export type Database = {
           student_id: string
         }
         Update: {
+          cgpa?: number | null
           created_at?: string
           id?: string
           project_id?: string
@@ -91,6 +144,7 @@ export type Database = {
           id: string
           is_open: boolean
           max_students: number
+          prerequisites: string | null
           program: Database["public"]["Enums"]["program_level"]
           title: string
         }
@@ -101,6 +155,7 @@ export type Database = {
           id?: string
           is_open?: boolean
           max_students?: number
+          prerequisites?: string | null
           program: Database["public"]["Enums"]["program_level"]
           title: string
         }
@@ -111,6 +166,7 @@ export type Database = {
           id?: string
           is_open?: boolean
           max_students?: number
+          prerequisites?: string | null
           program?: Database["public"]["Enums"]["program_level"]
           title?: string
         }
@@ -256,9 +312,23 @@ export type Database = {
         Args: { _approve: boolean; _id: string }
         Returns: undefined
       }
+      act_on_milestone: {
+        Args: { _approve: boolean; _id: string; _remarks: string }
+        Returns: undefined
+      }
       act_on_request: {
         Args: { _approve: boolean; _id: string; _remarks: string }
         Returns: undefined
+      }
+      get_public_verification: {
+        Args: { _request_id: string }
+        Returns: {
+          approved_at: string
+          program: Database["public"]["Enums"]["program_level"]
+          request_type: string
+          student_name: string
+          title: string
+        }[]
       }
       has_role: {
         Args: {
@@ -266,6 +336,18 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      request_changes: {
+        Args: { _id: string; _remarks: string }
+        Returns: undefined
+      }
+      revise_request: {
+        Args: { _details: string; _id: string }
+        Returns: undefined
+      }
+      submit_milestone: {
+        Args: { _id: string; _note: string }
+        Returns: undefined
       }
       withdraw_request: { Args: { _id: string }; Returns: undefined }
     }
@@ -276,6 +358,7 @@ export type Database = {
         | "faculty_accepted"
         | "allocated"
         | "rejected"
+      milestone_status: "pending" | "submitted" | "approved"
       program_level: "UG" | "PG"
       request_status:
         | "pending_faculty"
@@ -283,6 +366,7 @@ export type Database = {
         | "approved"
         | "rejected"
         | "withdrawn"
+        | "needs_revision"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -417,6 +501,7 @@ export const Constants = {
         "allocated",
         "rejected",
       ],
+      milestone_status: ["pending", "submitted", "approved"],
       program_level: ["UG", "PG"],
       request_status: [
         "pending_faculty",
@@ -424,6 +509,7 @@ export const Constants = {
         "approved",
         "rejected",
         "withdrawn",
+        "needs_revision",
       ],
     },
   },
