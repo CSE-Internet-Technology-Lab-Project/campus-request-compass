@@ -1,4 +1,4 @@
-type Actor = { id: string; isFaculty: boolean; isHod: boolean };
+export type Actor = { id: string; isFaculty: boolean; isHod: boolean };
 
 export function canReviewRequest(request: { status: string; faculty_id: string }, actor: Actor) {
   return (request.status === "pending_faculty" && request.faculty_id === actor.id && actor.isFaculty) || (request.status === "pending_hod" && actor.isHod);
