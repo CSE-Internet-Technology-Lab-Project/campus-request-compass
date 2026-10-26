@@ -1,11 +1,11 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CalendarClock, ClipboardList, Inbox, Plus, Search, Undo2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMe, usePeople, REQUEST_TYPES, statusLabel, statusVariant, actionLabel, timeAgo, initials } from "@/lib/auth";
-import { canReviewRequest, canSubmitDecision, canWithdrawRequest, requestSteps } from "@/lib/workflow";
+import { canReviewRequest, canSubmitDecision, canWithdrawRequest, canRequestChanges, canReviseRequest, requestSteps } from "@/lib/workflow";
 import { WorkflowSteps, REQUEST_STEP_LABELS } from "@/components/workflow-steps";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -113,7 +113,7 @@ function RequestsPage() {
           <SelectTrigger className="w-full sm:w-44" aria-label="Filter by status"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="any">Any status</SelectItem>
-            {["pending_faculty", "pending_hod", "approved", "rejected", "withdrawn"].map((s) => <SelectItem key={s} value={s}>{statusLabel[s]}</SelectItem>)}
+            {["pending_faculty", "pending_hod", "needs_revision", "approved", "rejected", "withdrawn"].map((s) => <SelectItem key={s} value={s}>{statusLabel[s]}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
