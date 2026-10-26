@@ -389,3 +389,40 @@ function RequestSheet({ req, onClose, canAct, meId, name }: { req: Req | null; o
     </Sheet>
   );
 }
+
+function ReviseRequest({ req, onClose }: { req: Req; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [details, setDetails] = useState("");
+  const m = useMutation({
+    mutationFn: async () => {
+      if (!details.trim()) throw new Error("Add the updated details before resubmitting");
+      const { error } = await supabase.rpc("revise_request", { _id: req.id, _details: details.trim() });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Resubmitted", { description: "Back with your faculty advisor for review." });
+      setOpen(false); onClose(); qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <div className="space-y-3">
+      <Alert>
+        <AlertTitle>Faculty requested changes</AlertTitle>
+        <AlertDescription>{req.faculty_remarks || "Update the details below and resubmit."}</AlertDescription>
+      </Alert>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild><Button>Update details &amp; resubmit</Button></DialogTrigger>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Revise “{req.title}”</DialogTitle><DialogDescription>Address your faculty's remarks and resubmit. It returns to them for review.</DialogDescription></DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="revdetails">Updated details</Label>
+            <Textarea id="revdetails" rows={5} maxLength={1000} value={details} onChange={(e) => setDetails(e.target.value)} placeholder={req.details || "Updated reason, dates, supporting information…"} />
+          </div>
+          <DialogFooter><Button disabled={!details.trim() || m.isPending} onClick={() => m.mutate()}>{m.isPending ? "Resubmitting…" : "Resubmit request"}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
