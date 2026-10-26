@@ -268,6 +268,16 @@ function RequestSheet({ req, onClose, canAct, meId, name }: { req: Req | null; o
     onSuccess: () => { toast.success("Request withdrawn"); qc.invalidateQueries(); },
     onError: (e: Error) => toast.error(e.message),
   });
+  const requestChanges = useMutation({
+    mutationFn: async () => {
+      if (!req) throw new Error("Choose a request");
+      if (!remarks.trim()) throw new Error("Tell the student what to change");
+      const { error } = await supabase.rpc("request_changes", { _id: req.id, _remarks: remarks.trim() });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Sent back for changes", { description: "The student can revise and resubmit." }); setRemarks(""); onClose(); qc.invalidateQueries(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
   const reachedHod = !!req && (req.status === "pending_hod" || req.status === "approved" || history.some((h) => h.action === "faculty_approved"));
   const stageLabel = req?.status === "pending_faculty" ? "faculty" : "HOD";
 
@@ -304,6 +314,14 @@ function RequestSheet({ req, onClose, canAct, meId, name }: { req: Req | null; o
                 </div>
               )}
 
+              {req.status === "approved" && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/verify/$requestId" params={{ requestId: req.id }} target="_blank">View approval certificate</Link>
+                </Button>
+              )}
+
+              {canReviseRequest(req, meId) && <ReviseRequest req={req} onClose={onClose} />}
+
               {canAct && (
                 <Card className="border-primary/40">
                   <CardHeader className="pb-2"><CardTitle className="text-base">Your decision as {stageLabel}</CardTitle></CardHeader>
@@ -321,6 +339,15 @@ function RequestSheet({ req, onClose, canAct, meId, name }: { req: Req | null; o
                           <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => act.mutate(false)}>Reject request</AlertDialogAction></AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
+                      {req.status === "pending_faculty" && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild><Button variant="secondary" disabled={requestChanges.isPending || !remarks.trim()}>Request changes</Button></AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>Send this back to the student?</AlertDialogTitle><AlertDialogDescription>They will see your remarks, revise the details, and resubmit for review.</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => requestChanges.mutate()}>Request changes</AlertDialogAction></AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                     </div>
                     {!canSubmitDecision(false, remarks) && <p className="text-xs text-muted-foreground">Add remarks to enable rejection.</p>}
                   </CardContent>
