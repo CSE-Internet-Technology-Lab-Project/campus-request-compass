@@ -22,6 +22,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { MilestoneList } from "@/components/milestones";
 import { Progress } from "@/components/ui/progress";
 
 type Search = { tab?: "browse" | "mine" | "review" };
@@ -168,6 +170,7 @@ function ProjectsPage() {
                   </CardHeader>
                   <CardContent className="flex-1 space-y-4">
                     <p className="line-clamp-4 text-sm text-muted-foreground">{p.description || "No description."}</p>
+                    {p.prerequisites && <p className="text-xs text-muted-foreground"><span className="font-medium">Prerequisites:</span> {p.prerequisites}</p>}
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs text-muted-foreground"><span>{allocated}/{p.max_students} seats filled</span>{owner && pending > 0 && <span className="flex items-center gap-1"><Users className="h-3 w-3" />{pending} pending</span>}</div>
                       <Progress value={(allocated / p.max_students) * 100} className="h-1.5" />
@@ -204,6 +207,7 @@ function ProjectsPage() {
                 <CardContent className="space-y-3">
                   {a.status !== "rejected" && <WorkflowSteps labels={APPLICATION_STEP_LABELS} states={applicationSteps(a.status, false)} />}
                   <p className="line-clamp-3 text-sm text-muted-foreground">“{a.statement}”</p>
+                  {a.status === "allocated" && <MilestoneList applicationId={a.id} studentId={me.id} guideId={p?.faculty_id} actor={me} />}
                 </CardContent>
                 {a.status === "applied" && <CardFooter><Withdraw applicationId={a.id} /></CardFooter>}
               </Card>
@@ -221,7 +225,7 @@ function ProjectsPage() {
               <Card key={a.id} className={can ? "border-primary/40" : "opacity-80"}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
-                    <div><CardTitle className="text-lg">{name(a.student_id)}</CardTitle><CardDescription>for {p?.title} · {timeAgo(a.created_at)}</CardDescription></div>
+                    <div><CardTitle className="text-lg">{name(a.student_id)}</CardTitle><CardDescription>for {p?.title} · {timeAgo(a.created_at)}{a.cgpa != null && <> · CGPA {a.cgpa}</>}</CardDescription></div>
                     <Badge variant={statusVariant(a.status)}>{statusLabel[a.status]}</Badge>
                   </div>
                 </CardHeader>
@@ -229,6 +233,8 @@ function ProjectsPage() {
                   {a.status !== "rejected" && <WorkflowSteps labels={APPLICATION_STEP_LABELS} states={applicationSteps(a.status, false)} compact />}
                   <p className="whitespace-pre-wrap text-sm">{a.statement}</p>
                   {p && <p className="text-xs text-muted-foreground">{allocated}/{p.max_students} seats filled</p>}
+                  {p && <CompareApplicants projectId={p.id} projectTitle={p.title} />}
+                  {a.status === "allocated" && p && <MilestoneList applicationId={a.id} studentId={a.student_id} guideId={p.faculty_id} actor={me} />}
                 </CardContent>
                 {can && (
                   <CardFooter className="gap-2">

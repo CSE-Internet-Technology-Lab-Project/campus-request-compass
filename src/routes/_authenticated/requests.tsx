@@ -1,11 +1,11 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CalendarClock, ClipboardList, Inbox, Plus, Search, Undo2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMe, usePeople, REQUEST_TYPES, statusLabel, statusVariant, actionLabel, timeAgo, initials } from "@/lib/auth";
-import { canReviewRequest, canSubmitDecision, canWithdrawRequest, requestSteps } from "@/lib/workflow";
+import { canReviewRequest, canSubmitDecision, canWithdrawRequest, canRequestChanges, canReviseRequest, requestSteps } from "@/lib/workflow";
 import { WorkflowSteps, REQUEST_STEP_LABELS } from "@/components/workflow-steps";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -113,7 +113,7 @@ function RequestsPage() {
           <SelectTrigger className="w-full sm:w-44" aria-label="Filter by status"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="any">Any status</SelectItem>
-            {["pending_faculty", "pending_hod", "approved", "rejected", "withdrawn"].map((s) => <SelectItem key={s} value={s}>{statusLabel[s]}</SelectItem>)}
+            {["pending_faculty", "pending_hod", "needs_revision", "approved", "rejected", "withdrawn"].map((s) => <SelectItem key={s} value={s}>{statusLabel[s]}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -268,6 +268,16 @@ function RequestSheet({ req, onClose, canAct, meId, name }: { req: Req | null; o
     onSuccess: () => { toast.success("Request withdrawn"); qc.invalidateQueries(); },
     onError: (e: Error) => toast.error(e.message),
   });
+  const requestChanges = useMutation({
+    mutationFn: async () => {
+      if (!req) throw new Error("Choose a request");
+      if (!remarks.trim()) throw new Error("Tell the student what to change");
+      const { error } = await supabase.rpc("request_changes", { _id: req.id, _remarks: remarks.trim() });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Sent back for changes", { description: "The student can revise and resubmit." }); setRemarks(""); onClose(); qc.invalidateQueries(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
   const reachedHod = !!req && (req.status === "pending_hod" || req.status === "approved" || history.some((h) => h.action === "faculty_approved"));
   const stageLabel = req?.status === "pending_faculty" ? "faculty" : "HOD";
 
@@ -304,6 +314,14 @@ function RequestSheet({ req, onClose, canAct, meId, name }: { req: Req | null; o
                 </div>
               )}
 
+              {req.status === "approved" && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/verify/$requestId" params={{ requestId: req.id }} target="_blank">View approval certificate</Link>
+                </Button>
+              )}
+
+              {canReviseRequest(req, meId) && <ReviseRequest req={req} onClose={onClose} />}
+
               {canAct && (
                 <Card className="border-primary/40">
                   <CardHeader className="pb-2"><CardTitle className="text-base">Your decision as {stageLabel}</CardTitle></CardHeader>
@@ -321,6 +339,15 @@ function RequestSheet({ req, onClose, canAct, meId, name }: { req: Req | null; o
                           <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => act.mutate(false)}>Reject request</AlertDialogAction></AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
+                      {req.status === "pending_faculty" && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild><Button variant="secondary" disabled={requestChanges.isPending || !remarks.trim()}>Request changes</Button></AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>Send this back to the student?</AlertDialogTitle><AlertDialogDescription>They will see your remarks, revise the details, and resubmit for review.</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => requestChanges.mutate()}>Request changes</AlertDialogAction></AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                     </div>
                     {!canSubmitDecision(false, remarks) && <p className="text-xs text-muted-foreground">Add remarks to enable rejection.</p>}
                   </CardContent>
@@ -360,5 +387,42 @@ function RequestSheet({ req, onClose, canAct, meId, name }: { req: Req | null; o
         )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+function ReviseRequest({ req, onClose }: { req: Req; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [details, setDetails] = useState("");
+  const m = useMutation({
+    mutationFn: async () => {
+      if (!details.trim()) throw new Error("Add the updated details before resubmitting");
+      const { error } = await supabase.rpc("revise_request", { _id: req.id, _details: details.trim() });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Resubmitted", { description: "Back with your faculty advisor for review." });
+      setOpen(false); onClose(); qc.invalidateQueries();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <div className="space-y-3">
+      <Alert>
+        <AlertTitle>Faculty requested changes</AlertTitle>
+        <AlertDescription>{req.faculty_remarks || "Update the details below and resubmit."}</AlertDescription>
+      </Alert>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild><Button>Update details &amp; resubmit</Button></DialogTrigger>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Revise “{req.title}”</DialogTitle><DialogDescription>Address your faculty's remarks and resubmit. It returns to them for review.</DialogDescription></DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="revdetails">Updated details</Label>
+            <Textarea id="revdetails" rows={5} maxLength={1000} value={details} onChange={(e) => setDetails(e.target.value)} placeholder={req.details || "Updated reason, dates, supporting information…"} />
+          </div>
+          <DialogFooter><Button disabled={!details.trim() || m.isPending} onClick={() => m.mutate()}>{m.isPending ? "Resubmitting…" : "Resubmit request"}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
